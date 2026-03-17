@@ -387,8 +387,6 @@ JSON format:
         )
 
         ai_text = response.choices[0].message.content
-        print("AI RESPONSE:")
-        print(ai_text)
         trip_data = extract_json(ai_text)
         #-----Fallback if AI fails-------
         if not trip_data:
