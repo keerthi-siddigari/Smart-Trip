@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Create Trip - SmartTrip</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="min-h-screen bg-[#0f172a] text-gray-200">
+
+  <!-- Navbar -->
+  <header class="border-b border-gray-800">
+    <div class="max-w-6xl mx-auto flex justify-between items-center px-6 py-5">
+      <a href="/dashboard" class="text-2xl font-bold text-white tracking-wide">
+        SmartTrip 
+      </a>
+
+      <a href="/dashboard"
+         class="text-gray-400 hover:text-white transition text-sm">
+         ← Back to Dashboard
+      </a>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="max-w-3xl mx-auto px-4 sm:px-6 py-14">
+
+    <!-- Page Heading -->
+    <section class="mb-10">
+      <h2 class="text-2xl sm:text-3xl md:text-4xl md:text-4xl font-bold text-white mb-2">
+        Create Your Trip 
+      </h2>
+      <p class="text-gray-400">
+        Enter your preferences and let AI generate a personalized itinerary.
+      </p>
+    </section>
+
+    <!-- Form Card -->
+    <div class="bg-[#1e293b] p-8 rounded-2xl border border-gray-800 shadow-lg">
+
+      <form action="/generate-trip" method="POST" class="space-y-6">
+      <input type="hidden" name="trip_id" value="{{ trip_id if trip_id else '' }}">
+      {% if error %}
+<p class="text-red-400 mb-4">{{ error }}</p>
+{% endif %}
+      <!-- Start City -->
+<div class="relative">
+  <label class="block text-sm text-gray-400 mb-2">Start City</label>
+
+  <input id="startCityInput" type="text" name="start_city" required
+    value="{{ start_city if start_city else '' }}"
+    placeholder="e.g., Hyderabad"
+    autocomplete="off"
+    class="w-full px-4 py-3 rounded-lg bg-[#0f172a] border border-gray-700 text-sm sm:text-base
+           focus:outline-none focus:ring-2 focus:ring-purple-600">
+
+  <!-- Dropdown -->
+  <div id="startCityDropdown"
+       class="absolute z-50 w-full mt-2 bg-[#1e293b] border border-gray-700 rounded-lg shadow-lg hidden max-h-48 overflow-y-auto">
+  </div>
+</div>
+
+
+
+   <!-- Destination -->
+<div class="relative">
+  <label class="block text-sm text-gray-400 mb-2">Destination</label>
+
+  <input id="destinationInput" type="text" name="destination" required
+    value="{{ destination if destination else '' }}"
+    placeholder="e.g., Goa"
+    autocomplete="off"
+    class="w-full px-4 py-3 rounded-lg bg-[#0f172a] border border-gray-700 text-sm sm:text-base
+           focus:outline-none focus:ring-2 focus:ring-purple-600">
+
+  <!-- Dropdown -->
+  <div id="destinationDropdown"
+       class="absolute z-50 w-full mt-2 bg-[#1e293b] border border-gray-700 rounded-lg shadow-lg hidden max-h-48 overflow-y-auto">
+  </div>
+</div>
+
+        <!-- Start Date -->
+        <div>
+          <label class="block text-sm text-gray-400 mb-2">Start Date</label>
+          <input type="date" name="start_date" required
+          value="{{ start_date  }}"
+            class="w-full px-4 py-3 rounded-lg bg-[#0f172a] border border-gray-700 
+                   focus:outline-none focus:ring-2 focus:ring-purple-600">
+        </div>
+
+        <!-- Duration -->
+        <div>
+          <label class="block text-sm text-gray-400 mb-2">Duration (Days)</label>
+          <input type="number" name="duration" min="1" required
+          value="{{duration if duration else '' }}"
+            placeholder="e.g., 5"
+            class="w-full px-4 py-3 rounded-lg bg-[#0f172a] border border-gray-700 text-sm sm:text-base
+                   focus:outline-none focus:ring-2 focus:ring-purple-600">
+        </div>
+
+        
+       <!-- Budget -->
+<div>
+  <div class="flex items-center justify-between mb-3">
+    <label class="block text-sm text-gray-400">Budget Range</label>
+    <span id="budgetError" class="text-red-500 text-sm hidden">
+      Please select a budget
+    </span>
+  </div>
+
+  <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+
+    <label class="cursor-pointer">
+      <input type="radio" name="budget_type" value="Budget" class="hidden peer budget-radio"{% if budget_type == "Budget" %}checked{% endif %}>
+      <div class="p-4 rounded-xl border border-gray-700 text-center 
+                  peer-checked:border-purple-500 peer-checked:bg-purple-500/10 transition">
+        <p class="text-lg">💸</p>
+        <p class="text-sm mt-1">Budget</p>
+      </div>
+    </label>
+
+    <label class="cursor-pointer">
+      <input type="radio" name="budget_type" value="Moderate" class="hidden peer budget-radio"{% if budget_type == "Moderate" %}checked{% endif %}>
+      <div class="p-4 rounded-xl border border-gray-700 text-center 
+                  peer-checked:border-purple-500 peer-checked:bg-purple-500/10 transition">
+        <p class="text-lg">💰</p>
+        <p class="text-sm mt-1">Moderate</p>
+      </div>
+    </label>
+
+    <label class="cursor-pointer">
+      <input type="radio" name="budget_type" value="Luxury" class="hidden peer budget-radio" {% if budget_type == "Luxury" %}checked{% endif %}>
+      <div class="p-4 rounded-xl border border-gray-700 text-center 
+                  peer-checked:border-purple-500 peer-checked:bg-purple-500/10 transition">
+        <p class="text-lg">👑</p>
+        <p class="text-sm mt-1">Luxury</p>
+      </div>
+    </label>
+
+  </div>
+</div>
+
+        <!-- Travel Type -->
+        <div>
+          <label class="block text-sm text-gray-400 mb-3">Traveling With</label>
+          <select name="travel_type" required
+            class="w-full px-4 py-3 rounded-lg bg-[#0f172a] border border-gray-700 
+                   focus:outline-none focus:ring-2 focus:ring-purple-600">
+            
+            <option value="Solo" {% if travel_type == "Solo" %}selected{% endif %}>Solo</option>
+            <option value="Friends"{% if travel_type == "Friends" %}selected{% endif %}>Friends</option>
+            <option value="Couple" {% if travel_type == "Couple" %}selected{% endif %}>Couple</option>
+            <option value="Family" {% if travel_type == "Family" %}selected{% endif %}>Family</option>
+          </select>
+        </div>
+
+        <!-- Transport Mode -->
+<div>
+  <label class="block text-sm text-gray-400 mb-3">Preferred Transport</label>
+  <select name="transport_mode" required
+    class="w-full px-4 py-3 rounded-lg bg-[#0f172a] border border-gray-700 
+           focus:outline-none focus:ring-2 focus:ring-purple-600">
+
+    <option value="Auto" {% if transport_mode == "Auto" %}selected{% endif %}>Auto Suggest</option>
+    <option value="Flight" {% if transport_mode == "Flight" %}selected{% endif %}>Flight</option>
+    <option value="Train" {% if transport_mode == "Train" %}selected{% endif %}>Train</option>
+    <option value="Bus" {% if transport_mode == "Bus" %}selected{% endif %}>Bus</option>
+    <option value="Car" {% if transport_mode == "Car" %}selected{% endif %}>Car</option>
+
+  </select>
+</div>
+        <!-- Trip Purpose / Preference -->
+<div>
+  <label class="block text-sm text-gray-400 mb-3">Trip Preference</label>
+  <select name="trip_style" required
+    class="w-full px-4 py-3 rounded-lg bg-[#0f172a] border border-gray-700 
+           focus:outline-none focus:ring-2 focus:ring-purple-600">
+    
+    <option value="Exploring Sites"{% if trip_style == "Exploring Sites" %}selected{% endif %}>Exploring Sites</option>
+    <option value="Historic & Cultural" {% if trip_style == "Historic & Cultural" %}selected{% endif %}>Historic & Cultural</option>
+    <option value="Pilgrimage / Spiritual" {% if trip_style == "Pilgrimage / Spiritual" %}selected{% endif %}>Pilgrimage / Spiritual</option>
+    <option value="Relax / Chill / Leisure" {% if trip_style == "Relax / Chill / Leisure" %}selected{% endif %}>Relax / Chill / Leisure</option>
+    <option value="Adventure / Outdoor" {% if trip_style == "Adventure / Outdoor" %}selected{% endif %}>Adventure / Outdoor</option>
+    
+  </select>
+</div>
+
+        <!-- Submit Button -->
+        <div class="pt-4">
+          <button type="submit"
+            class="w-full py-3 rounded-lg bg-purple-600 hover:bg-purple-700 
+                   transition font-semibold text-white shadow-md">
+            Generate Trip 
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+
+  </main>
+  <!-- Loader Overlay -->
+<div id="tripLoader" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center text-center text-white text-lg font-medium space-y-4 hidden z-50">
+  <svg class="animate-spin h-12 w-12 text-purple-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+  </svg>
+  <p id="loaderText">Generating trip...</p>
+</div>
+<script>
+document.querySelector("form").addEventListener("submit", function(e) {
+  const radios = document.querySelectorAll(".budget-radio");
+  const error = document.getElementById("budgetError");
+
+  let selected = false;
+  radios.forEach(radio => { if (radio.checked) selected = true; });
+
+  if (!selected) {
+    e.preventDefault();
+    error.classList.remove("hidden");
+  } else {
+    error.classList.add("hidden");
+
+    const loader = document.getElementById("tripLoader");
+    const loaderText = document.getElementById("loaderText");
+    loader.classList.remove("hidden");
+
+    const messages = [
+      "Generating itinerary...",
+      "Fetching top attractions...",
+      "Finding recommended accommodations...",
+      "Finalizing budget breakdown..."
+    ];
+    let i = 0;
+    const interval = setInterval(() => {
+      loaderText.textContent = messages[i];
+      i = (i + 1) % messages.length;
+    }, 1200);
+
+    // Let the form submit normally
+  }
+});
+
+// Hide loader on back/forward navigation
+window.addEventListener("pageshow", function(event) {
+  const loader = document.getElementById('tripLoader');
+  if (loader) loader.classList.add('hidden');
+});
+
+
+
+
+
+
+async function setupLocationAutocomplete(inputId, dropdownId) {
+  const input = document.getElementById(inputId);
+  const dropdown = document.getElementById(dropdownId);
+
+  // Get API key from backend
+  const res = await fetch("/get-locationiq-key");
+  const data = await res.json();
+  const API_KEY = data.key;
+
+  let debounceTimer;
+
+  input.addEventListener("input", function () {
+    const query = input.value.trim();
+
+    clearTimeout(debounceTimer);
+
+    if (!query) {
+      dropdown.classList.add("hidden");
+      return;
+    }
+
+    // Debounce (important )
+    debounceTimer = setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `https://api.locationiq.com/v1/autocomplete?key=${API_KEY}&q=${query}&limit=5&format=json`
+        );
+
+        const results = await response.json();
+
+        dropdown.innerHTML = "";
+
+        if (!results || results.length === 0) {
+          dropdown.classList.add("hidden");
+          return;
+        }
+
+        results.forEach(place => {
+          const item = document.createElement("div");
+
+          item.textContent = place.display_name;
+
+          item.className = `
+            px-4 py-2 text-sm text-gray-300 cursor-pointer
+            hover:bg-purple-600 hover:text-white transition
+          `;
+
+          item.addEventListener("click", () => {
+  const city =
+    place.address?.city ||
+    place.address?.town ||
+    place.address?.village ||
+    place.display_name.split(",")[0];
+
+  input.value = city;
+  dropdown.classList.add("hidden");
+});
+
+          dropdown.appendChild(item);
+        });
+
+        dropdown.classList.remove("hidden");
+
+      } catch (err) {
+        console.error("LocationIQ error:", err);
+      }
+    }, 300); // debounce delay
+
+  });
+
+  // Close dropdown on outside click
+  document.addEventListener("click", (e) => {
+    if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+      dropdown.classList.add("hidden");
+    }
+  });
+}
+
+// Initialize for both inputs
+setupLocationAutocomplete("startCityInput", "startCityDropdown");
+setupLocationAutocomplete("destinationInput", "destinationDropdown");
+
+
+</script>
+</body>
+</html>

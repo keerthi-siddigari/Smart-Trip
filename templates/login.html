@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login | SmartTrip</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://code.iconify.design/2/2.2.1/iconify.min.js"></script>
+  <style>
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-20px); }
+      100% { transform: translateY(0px); }
+    }
+
+    @keyframes float2 {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(25px); }
+      100% { transform: translateY(0px); }
+    }
+
+    .animate-float { animation: float 6s ease-in-out infinite; }
+    .animate-float2 { animation: float2 8s ease-in-out infinite; }
+  </style>
+</head>
+<body class="relative min-h-screen flex items-center justify-center 
+             bg-gradient-to-br from-[#0f0c29] via-[#1c1b3a] to-[#24243e] overflow-hidden">
+
+  <!-- Floating Background Elements -->
+  <div class="absolute inset-0 overflow-hidden -z-10">
+    <div class="absolute top-20 left-10 w-16 h-16 bg-purple-500/20 rounded-full animate-float"></div>
+    <div class="absolute bottom-32 right-20 w-24 h-24 bg-pink-500/20 rounded-full animate-float2"></div>
+  </div>
+
+  <!-- Login Card -->
+  <div class="w-full max-w-md p-6 sm:p-10 rounded-2xl bg-white/5 backdrop-blur-lg border border-purple-500/20 shadow-2xl text-white">
+
+    <!-- Title -->
+    <div class="text-center mb-8">
+      <h2 class="text-3xl font-bold text-white">Welcome Back</h2>
+      <p class="text-gray-400 mt-2 text-sm">
+        Sign in to continue planning your trips
+      </p>
+    </div>
+
+    <!-- Error Message -->
+    <p id="error-msg" class="text-red-400 text-sm mb-4 hidden"></p>
+
+    <!-- Form -->
+    <form id="login-form" class="space-y-6">
+      <!-- Email -->
+      <div>
+        <label class="text-sm text-gray-300">Email</label>
+        <input type="email" id="email" placeholder="Enter your email"
+               class="w-full mt-2 px-4 py-3 rounded-lg bg-[#1e1e2f] text-white border border-purple-500/20
+                      focus:outline-none focus:border-purple-500 transition duration-300" required>
+      </div>
+
+      <!-- Password -->
+<div class="mb-4">
+  <label for="password" class="block text-sm text-gray-300 mb-1">Password</label>
+  <div class="relative">
+    <input type="password" id="password" placeholder="Enter your password"
+           class="w-full px-4 py-3 rounded-lg bg-[#1e1e2f] text-white border border-purple-500/20
+                  focus:outline-none focus:border-purple-500 transition pr-10" required>
+
+    <span class="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-400"
+          onclick="togglePassword('password', this)">
+      <span class="iconify text-lg" data-icon="mdi:eye-outline"></span>
+    </span>
+  </div>
+</div>
+
+      <!-- Forgot -->
+      <div class="text-right text-sm">
+        <a href="/forgot-password" class="text-purple-400 hover:text-purple-300 transition">Forgot password?</a>
+      </div>
+
+      <!-- Login Button -->
+      <button type="submit" id="login-btn"
+              class="w-full py-3 rounded-lg bg-gradient-to-r from-purple-600 to-pink-500 
+                     text-white font-medium shadow-lg hover:scale-105 transition duration-300">
+        Login
+      </button>
+    </form>
+<!-- Already logged in loader -->
+<div id="already-loggedin-loader" class="hidden flex flex-col items-center justify-center mt-4">
+  <div class="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+  <p class="text-gray-300 text-sm">Already logged in, redirecting...</p>
+</div>
+    <!-- Sign Up -->
+    <p class="text-center text-gray-400 text-sm mt-8">
+      Don’t have an account?
+      <a href="/signup" class="text-purple-400 hover:text-purple-300 transition">Sign up</a>
+    </p>
+  </div>
+
+  <!-- JS for API call, loading state & redirect -->
+  <script>
+  
+    const form = document.getElementById('login-form');
+    const loginBtn = document.getElementById('login-btn');
+    const errorMsg = document.getElementById('error-msg');
+
+    form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  // Clear previous error
+  errorMsg.classList.add('hidden');
+  errorMsg.textContent = '';
+
+  // Get form values
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+
+  // Show loading state
+  loginBtn.disabled = true;
+  loginBtn.textContent = 'Signing in...';
+
+  try {
+    const response = await fetch('/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      // Success → redirect to home
+      window.location.href = '/dashboard';
+      // Do NOT reset the button here
+    } else {
+      // Show error
+      errorMsg.textContent = data.error || 'Login failed';
+      errorMsg.classList.remove('hidden');
+
+      // Reset button on failure
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'Login';
+    }
+  } catch (err) {
+    errorMsg.textContent = 'Server error, try again later';
+    errorMsg.classList.remove('hidden');
+
+    // Reset button on error
+    loginBtn.disabled = false;
+    loginBtn.textContent = 'Login';
+  }
+});
+
+function togglePassword(fieldId, iconSpan) {
+    const input = document.getElementById(fieldId);
+    const icon = iconSpan.querySelector('.iconify');
+
+    if (input.type === "password") {
+        input.type = "text";
+        icon.dataset.icon = "mdi:eye-off-outline";
+    } else {
+        input.type = "password";
+        icon.dataset.icon = "mdi:eye-outline";
+    }
+}
+  </script>
+
+</body>
+</html>

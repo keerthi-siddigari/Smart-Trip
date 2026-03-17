@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SmartTrip - Trip Result</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://code.iconify.design/2/2.2.1/iconify.min.js"></script>
+
+  <style>
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#1c1b3a] to-[#24243e] text-gray-200">
+
+  <!-- Navbar -->
+  <header class="border-b border-gray-800">
+    <div class="max-w-6xl mx-auto flex justify-between items-center px-6 py-5">
+      <h1 class="text-2xl font-bold text-white tracking-wide">SmartTrip</h1>
+      <a href="/dashboard"
+         class="text-gray-400 hover:text-white transition text-sm">
+         ← Back to Dashboard
+      </a>
+    </div>
+  </header>
+
+ <!--Error screen--> 
+{% if not trip.daily_plan or trip.daily_plan|length == 0 %}
+<div class="min-h-screen flex items-center justify-center bg-gray-100">
+
+  <div class="text-center bg-white shadow-xl rounded-xl p-10 max-w-md">
+    <h2 class="text-2xl font-bold text-red-600 mb-4">
+      ⚠ Trip plan could not be generated
+    </h2>
+
+    <p class="text-gray-600 mb-6">
+      Something went wrong while creating your trip plan.
+      Please try again.
+    </p>
+
+    <a href="/create-trip?prefill=1"
+       class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+       Try Again
+    </a>
+  </div>
+
+</div>
+{% else %}
+<main class="max-w-6xl mx-auto px-6 py-10 space-y-16">
+    <!-- Trip Summary -->
+<section class="relative">
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-semibold text-white">Trip Summary</h2>
+    
+    <div class="flex gap-4">
+      <!-- Save Button -->
+      {% if not is_view %}
+<button id="save-trip-btn"
+        class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition">
+  Save Trip
+</button>
+{% endif %}
+    </div>
+  </div>
+  <p class="text-gray-400 text-sm mt-2 mb-6">
+  AI-generated travel plan for 
+  <span class="text-white font-medium">{{ trip.destination }}</span> 
+  based on your preferences.
+</p>
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+    <div class="bg-gradient-to-tr from-[#1e293b] to-[#111827] p-6 rounded-xl border border-gray-800 text-center">
+      <p class="text-gray-400 text-sm">Destination</p>
+      <p class="text-white font-semibold mt-2">{{ trip.destination }}</p>
+    </div>
+
+    <div class="bg-gradient-to-tr from-[#1e293b] to-[#111827] p-6 rounded-xl border border-gray-800 text-center">
+      <p class="text-gray-400 text-sm">Duration</p>
+      <p class="text-white font-semibold mt-2">{{ trip.duration }} Days</p>
+    </div>
+
+    <div class="bg-gradient-to-tr from-[#1e293b] to-[#111827] p-6 rounded-xl border border-gray-800 text-center">
+      <p class="text-gray-400 text-sm">Travel Type</p>
+      <p class="text-white font-semibold mt-2">{{ trip.travel_type }}</p>
+    </div>
+
+    <div class="bg-gradient-to-tr from-[#1e293b] to-[#111827] p-6 rounded-xl border border-gray-800 text-center">
+      <p class="text-gray-400 text-sm">Budget Type</p>
+      <p class="text-white font-semibold mt-2">{{ trip.budget_type }}</p>
+    </div>
+  </div>
+</section>
+<!-- Itinerary -->
+<section>
+  <!-- Heading -->
+  <h2 class="text-xl sm:text-2xl font-semibold text-white mb-4 sm:mb-6">
+    Itinerary Plan
+  </h2>
+
+  <!-- Swipe hint -->
+  <span class="text-[11px] sm:text-xs text-gray-400 md:hidden">
+    Swipe →
+  </span>
+
+  <div class="flex gap-4 sm:gap-6 overflow-x-auto scrollbar-hide pb-4 mt-2">
+    {% for day in trip.daily_plan %}
+    <div class="w-[85%] sm:w-[320px] flex-shrink-0 bg-gradient-to-tr from-[#1e293b] to-[#111827] rounded-xl border border-gray-800 overflow-hidden hover:shadow-2xl transition">
+      
+      <!-- Image -->
+      <div class="w-full h-40 sm:h-48 bg-gray-800">
+        <img 
+          src="{{ day.image if day.image_found else '/static/default-itinerary.png' }}"
+          class="w-full h-full object-cover">
+      </div>
+
+      <!-- Content -->
+      <div class="p-4 sm:p-5 md:p-6">
+
+        <!-- Title -->
+        <h3 class="text-sm sm:text-base font-semibold text-white mb-1 sm:mb-2">
+          Day {{ day.day }} - {{ day.place }}
+        </h3>
+
+        <!-- Details -->
+        <p class="text-gray-400 text-xs sm:text-sm mt-1">
+          <strong>Morning:</strong> {{ day.morning }}
+        </p>
+
+        <p class="text-gray-400 text-xs sm:text-sm mt-1">
+          <strong>Afternoon:</strong> {{ day.afternoon }}
+        </p>
+
+        <p class="text-gray-400 text-xs sm:text-sm mt-1">
+          <strong>Evening:</strong> {{ day.evening }}
+        </p>
+
+        <!-- Best time -->
+        {% if day.best_time %}
+        <p class="text-purple-400 text-[11px] sm:text-xs mt-2">
+          Best Time: {{ day.best_time }}
+        </p>
+        {% endif %}
+
+        <!-- Map link -->
+        {% if day.map_link %}
+        <a href="{{ day.map_link }}" target="_blank"
+           class="text-blue-400 text-[11px] sm:text-xs underline mt-1 inline-block">
+          View on Map
+        </a>
+        {% endif %}
+
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+</section>
+  <!--Top Attractions-->
+<section>
+
+  <!-- Heading -->
+  <h2 class="text-xl sm:text-2xl font-semibold text-white mb-4 sm:mb-6">
+    Top Attractions
+  </h2>
+
+  <!-- Swipe hint -->
+  <span class="text-[11px] sm:text-xs text-gray-400 md:hidden">
+    Swipe →
+  </span>
+
+  <div class="flex gap-4 sm:gap-6 overflow-x-auto scrollbar-hide pb-4 mt-2">
+    {% for place in trip.top_attractions %}
+    <div class="w-[85%] sm:w-[320px] flex-shrink-0 bg-gradient-to-tr from-[#1e293b] to-[#111827] rounded-xl border border-gray-800 overflow-hidden hover:shadow-2xl transition">
+      
+      <!-- Image -->
+      <div class="w-full h-40 sm:h-48 bg-gray-800">
+        <img 
+          src="{{ place.image if place.image_found else '/static/default-attraction.png' }}"
+          class="w-full h-full object-cover">
+      </div>
+
+      <!-- Content -->
+      <div class="p-4 sm:p-5 md:p-6">
+
+        <!-- Title -->
+        <h3 class="text-sm sm:text-base font-semibold text-white">
+          {{ place.name }}
+        </h3>
+
+        <!-- Description -->
+        <p class="text-gray-400 text-xs sm:text-sm mt-1 sm:mt-2">
+          {{ place.description }}
+        </p>
+
+        <!-- Best time -->
+        {% if place.best_time %}
+        <p class="text-purple-400 text-[11px] sm:text-xs mt-1">
+          Best Time: {{ place.best_time }}
+        </p>
+        {% endif %}
+
+        <!-- Map -->
+        {% if place.map_link %}
+        <a href="{{ place.map_link }}" target="_blank"
+           class="text-blue-400 text-[11px] sm:text-xs underline mt-1 inline-block">
+          View on Map
+        </a>
+        {% endif %}
+
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+
+</section>
+    <!-- Things To Do -->
+   <section>
+
+  <!-- Heading -->
+  <h2 class="text-xl sm:text-2xl font-semibold text-white mb-4 sm:mb-6">
+    Things To Do
+  </h2>
+
+  <!-- Swipe hint -->
+  <span class="text-[11px] sm:text-xs text-gray-400 md:hidden">
+    Swipe →
+  </span>
+
+  <div class="flex gap-4 sm:gap-6 overflow-x-auto scrollbar-hide pb-4 mt-2">
+    {% for activity in trip.things_to_do %}
+  
+    <div class="w-[85%] sm:w-[320px] flex-shrink-0 bg-gradient-to-tr from-[#1e293b] to-[#111827] 
+                rounded-xl border border-gray-800 p-4 sm:p-5 md:p-6 
+                hover:shadow-2xl transition">
+
+      <!-- Title -->
+      <h3 class="text-sm sm:text-base font-semibold text-white">
+        {{ activity.name }}
+      </h3>
+
+      <!-- Description -->
+      <p class="text-gray-400 text-xs sm:text-sm mt-1 sm:mt-2">
+        {{ activity.description }}
+      </p>
+
+    </div>
+
+    {% endfor %}
+  </div>
+</section>
+<!--Travel Vlogs-->
+{% if trip.vlogs and trip.vlogs|length > 0 %}
+<section>
+
+  <!-- Heading -->
+  <h2 class="text-xl sm:text-2xl font-semibold text-white mb-4 sm:mb-6">
+    Explore through Vlogs
+  </h2>
+
+  <!-- Swipe hint -->
+  <span class="text-[11px] sm:text-xs text-gray-400 md:hidden">
+    Swipe →
+  </span>
+
+  <div class="flex gap-4 sm:gap-6 overflow-x-auto scrollbar-hide pb-4 mt-2">
+
+    {% for vlog in trip.vlogs %}
+    <div class="w-[85%] sm:w-[320px] flex-shrink-0 bg-gradient-to-tr from-[#1e293b] to-[#111827] 
+                rounded-xl border border-gray-800 overflow-hidden 
+                hover:shadow-2xl transition">
+
+      <!-- Video -->
+      <div class="w-full h-44 sm:h-52">
+        <iframe 
+          class="w-full h-full"
+          src="https://www.youtube.com/embed/{{ vlog.videoId }}"
+          title="{{ vlog.title }}"
+          frameborder="0"
+          allowfullscreen>
+        </iframe>
+      </div>
+
+      <!-- Content -->
+      <div class="p-4 sm:p-5 md:p-6">
+
+        <!-- Title -->
+        <h3 class="text-sm sm:text-base font-semibold text-white">
+          {{ vlog.title }}
+        </h3>
+
+        <!-- Subtitle -->
+        <p class="text-gray-400 text-[11px] sm:text-xs mt-1 sm:mt-2">
+          See how travelers experienced {{ trip.destination }}.
+        </p>
+
+      </div>
+
+    </div>
+    {% endfor %}
+
+  </div>
+</section>
+{% endif %}
+   <!-- Accommodation -->
+<section class="mt-10 sm:mt-12">
+
+  <!-- Heading -->
+  <h2 class="text-xl sm:text-2xl font-semibold text-white mb-4 sm:mb-6">
+    Recommended Accommodation
+  </h2>
+
+  <!-- Swipe hint -->
+  <span class="text-[11px] sm:text-xs text-gray-400 md:hidden">
+    Swipe →
+  </span>
+
+  <div class="flex gap-4 sm:gap-6 overflow-x-auto scrollbar-hide pb-4 mt-2">
+
+    {% for stay in trip.accommodations %}
+    <div class="w-[85%] sm:w-[320px] flex-shrink-0 bg-gradient-to-tr from-[#1e293b] to-[#111827] 
+                rounded-xl border border-gray-800 overflow-hidden 
+                hover:shadow-2xl transition">
+
+      <!-- Image -->
+      <div class="w-full h-40 sm:h-48 bg-gray-800">
+        <img 
+          src="{{ stay.image if stay.image_found else '/static/default-accommodation.png' }}"
+          class="w-full h-full object-cover">
+      </div>
+
+      <!-- Content -->
+      <div class="p-4 sm:p-5 md:p-6">
+
+        <!-- Name -->
+        <h3 class="text-sm sm:text-base font-semibold text-white">
+          {{ stay.name }}
+        </h3>
+
+        <!-- Type -->
+        <p class="text-gray-400 text-xs sm:text-sm mt-1 sm:mt-2">
+          Type: {{ stay.type }}
+        </p>
+
+        <!-- Price -->
+        <p class="text-green-400 text-xs sm:text-sm mt-1">
+          {{ stay.price_per_night }}
+        </p>
+
+        <!-- Map -->
+        <a href="{{ stay.map_link }}" target="_blank"
+           class="inline-block mt-2 sm:mt-3 text-blue-400 text-xs sm:text-sm hover:underline">
+          View on Map
+        </a>
+
+      </div>
+
+    </div>
+    {% endfor %}
+
+  </div>
+</section>
+<!-- Famous Food -->
+<section>
+
+  <!-- Heading -->
+  <h2 class="text-xl sm:text-2xl font-semibold text-white mb-4 sm:mb-6">
+    Famous Local Food
+  </h2>
+
+  <!-- Swipe hint -->
+  <span class="text-[11px] sm:text-xs text-gray-400 md:hidden">
+    Swipe →
+  </span>
+
+  <div class="flex gap-4 sm:gap-6 overflow-x-auto scrollbar-hide pb-4 mt-2">
+
+    {% for food in trip.famous_food %}
+    <div class="w-[85%] sm:w-[320px] flex-shrink-0 bg-gradient-to-tr from-[#1e293b] to-[#111827] 
+                rounded-xl border border-gray-800 overflow-hidden 
+                hover:shadow-2xl transition">
+      
+      <!-- Image -->
+      <div class="w-full h-40 sm:h-48 bg-gray-800">
+        <img 
+          src="{{ food.image if food.image_found else '/static/default-food.png' }}"
+          class="w-full h-full object-cover">
+      </div>
+
+      <!-- Content -->
+      <div class="p-4 sm:p-5 md:p-6">
+
+        <!-- Name -->
+        <h3 class="text-sm sm:text-base font-semibold text-white">
+          {{ food.name }}
+        </h3>
+
+        <!-- Description -->
+        <p class="text-gray-400 text-xs sm:text-sm mt-1 sm:mt-2">
+          {{ food.description }}
+        </p>
+
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+</section>
+    <!-- Transport -->
+   <section>
+
+  <!-- Heading -->
+  <h2 class="text-xl sm:text-2xl font-semibold text-white mb-4 sm:mb-6">
+    Transportation Suggestions
+  </h2>
+
+  <!-- Container -->
+  <div class="bg-gradient-to-tr from-[#1e293b] to-[#111827] 
+              p-4 sm:p-5 md:p-6 
+              rounded-xl border border-gray-800 
+              space-y-2 sm:space-y-3">
+
+    {% for transport in trip.transport %}
+    <p class="text-gray-300 text-xs sm:text-sm flex items-center gap-2">
+      
+      <!-- Icon -->
+      <span class="iconify text-purple-400 text-base sm:text-lg" data-icon="mdi:car-outline"></span>
+      
+      <!-- Text -->
+      {{ transport }}
+
+    </p>
+    {% endfor %}
+
+  </div>
+</section>
+    
+  <!-- Budget Breakdown -->
+<section>
+
+  <!-- Heading -->
+  <h2 class="text-xl sm:text-2xl font-semibold text-white mb-4 sm:mb-6">
+    Budget Breakdown
+  </h2>
+
+  <!-- Grid -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+
+    <!-- Card -->
+    <div class="bg-gradient-to-tr from-[#1e293b] to-[#111827] 
+                p-4 sm:p-5 md:p-6 
+                rounded-xl border border-gray-800 text-center">
+      <p class="text-gray-400 text-xs sm:text-sm">Accommodation</p>
+      <p class="text-white font-semibold text-sm sm:text-base mt-1 sm:mt-2">
+        ₹{{ trip.budget.accommodation_fmt }}
+      </p>
+    </div>
+
+    <div class="bg-gradient-to-tr from-[#1e293b] to-[#111827] 
+                p-4 sm:p-5 md:p-6 
+                rounded-xl border border-gray-800 text-center">
+      <p class="text-gray-400 text-xs sm:text-sm">Food</p>
+      <p class="text-white font-semibold text-sm sm:text-base mt-1 sm:mt-2">
+        ₹{{ trip.budget.food_fmt }}
+      </p>
+    </div>
+
+    <div class="bg-gradient-to-tr from-[#1e293b] to-[#111827] 
+                p-4 sm:p-5 md:p-6 
+                rounded-xl border border-gray-800 text-center">
+      <p class="text-gray-400 text-xs sm:text-sm">Transport</p>
+      <p class="text-white font-semibold text-sm sm:text-base mt-1 sm:mt-2">
+        ₹{{ trip.budget.transport_fmt }}
+      </p>
+    </div>
+
+    <div class="bg-gradient-to-tr from-[#1e293b] to-[#111827] 
+                p-4 sm:p-5 md:p-6 
+                rounded-xl border border-gray-800 text-center">
+      <p class="text-gray-400 text-xs sm:text-sm">Activities</p>
+      <p class="text-white font-semibold text-sm sm:text-base mt-1 sm:mt-2">
+        ₹{{ trip.budget.activities_fmt }}
+      </p>
+    </div>
+
+  </div>
+
+  <!-- Total Card -->
+  <div class="mt-6 sm:mt-8 max-w-sm sm:max-w-md mx-auto 
+              bg-gradient-to-r from-purple-600 to-pink-500 
+              p-5 sm:p-6 rounded-xl text-center shadow-lg">
+
+    <h3 class="text-sm sm:text-lg font-semibold text-white">
+      Total Trip Cost
+    </h3>
+
+    <p class="text-xl sm:text-2xl font-bold text-white mt-1 sm:mt-2">
+      ₹{{ trip.budget_total_fmt }}
+    </p>
+
+    <p class="text-[11px] sm:text-sm text-gray-200 mt-1">
+      ₹{{trip.per_day_cost_fmt }} per day
+    </p>
+
+  </div>
+
+</section>
+  </main>
+{% endif %}
+<!-- Trip Save Toast Modal -->
+<div id="tripSaveModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center pointer-events-none">
+  <div class="bg-gray-800 p-6 rounded-xl flex flex-col items-center animate-fade-in">
+    <span id="tripSaveIcon" class="iconify text-5xl mb-3"></span>
+    <p id="tripSaveMessage" class="text-white font-semibold text-center"></p>
+  </div>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const saveBtn = document.getElementById("save-trip-btn");
+  const modal = document.getElementById("tripSaveModal");
+  const messageEl = document.getElementById("tripSaveMessage");
+  const iconEl = document.getElementById("tripSaveIcon");
+
+  function showToast(success, message) {
+    if (success) {
+      iconEl.dataset.icon = "mdi:check-circle-outline";  
+      iconEl.classList.add("text-green-400");
+      iconEl.classList.remove("text-red-500");
+    } else {
+      iconEl.dataset.icon = "mdi:close-circle-outline"; 
+      iconEl.classList.add("text-red-500");
+      iconEl.classList.remove("text-green-400");
+    }
+
+    messageEl.textContent = message;
+    modal.classList.remove("hidden");
+
+    // Hide after 2.5 seconds
+    setTimeout(() => {
+      modal.classList.add("hidden");
+    }, 2500);
+  }
+
+  if (saveBtn) {
+    saveBtn.addEventListener("click", async function() {
+      try {
+        const response = await fetch("/save-trip", { method: "POST" });
+        const data = await response.json();
+
+        if (data.success) {
+          if (data.already_saved) {
+            showToast(true, "Trip already saved!");
+          } else {
+            showToast(true, "Trip saved successfully!");
+          }
+        } else {
+          showToast(false, data.error || "Error saving trip. Please try again later.");
+        }
+      } catch (err) {
+        showToast(false, "Error saving trip. Please try again later.");
+        console.error(err);
+      }
+    });
+  }
+});
+
+
+</script>
+</body>
+</html>

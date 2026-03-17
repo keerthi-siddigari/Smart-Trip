@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Profile - SmartTrip</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://code.iconify.design/2/2.2.1/iconify.min.js"></script>
+
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#1c1b3a] to-[#24243e] text-gray-200">
+
+<!-- HEADER IMAGE -->
+<div class="relative">
+
+<img src="{{ header_image or 'https://images.unsplash.com/photo-1501785888041-af3ef285b470' }}"
+class="w-full h-52 md:h-64 object-cover">
+
+<!-- Avatar -->
+<div class="absolute left-1/2 transform -translate-x-1/2 bottom-[-40px]">
+
+<div class="w-20 h-20 md:w-24 md:h-24 rounded-full bg-purple-600
+flex items-center justify-center text-2xl font-bold text-white border-4 border-[#0f0c29]">
+
+{{ user.username[0]|upper }}
+
+</div>
+
+</div>
+
+</div>
+
+
+<!-- CONTENT -->
+<div class="max-w-3xl mx-auto mt-16 px-6">
+
+
+<!-- USER INFO -->
+<div class="text-center mb-8">
+  <h2 id="displayUsername" class="text-2xl md:text-3xl font-bold text-white">
+    {{ user.username.title() }}
+  </h2>
+
+  <p id="displayEmail" class="text-gray-400 mt-1">
+    {{ user.email }}
+  </p>
+</div>
+
+
+<!-- PROFILE CARD -->
+<div class="bg-[#1e293b] border border-gray-800 rounded-xl overflow-hidden">
+
+<!-- USERNAME -->
+<div class="p-5 border-b border-gray-800 flex items-center justify-between">
+
+<div class="w-full">
+
+<p class="text-gray-400 text-sm mb-1">Username</p>
+
+<input
+id="username"
+value="{{ user.username }}"
+disabled
+class="bg-transparent text-white outline-none w-full">
+
+</div>
+
+<button onclick="enableEdit('username')" class="text-gray-400 hover:text-purple-400 ml-4">
+<span class="iconify text-lg" data-icon="mdi:pencil-outline"></span>
+</button>
+
+</div>
+
+
+<!-- EMAIL -->
+<div class="p-5 border-b border-gray-800 flex items-center justify-between">
+
+<div class="w-full">
+
+<p class="text-gray-400 text-sm mb-1">Email</p>
+
+<input
+id="email"
+value="{{ user.email }}"
+disabled
+class="bg-transparent text-white outline-none w-full">
+<p id="emailError" class="text-red-400 text-xs mt-1 hidden">
+Please enter a valid email address
+</p>
+</div>
+
+<button onclick="enableEdit('email')" class="text-gray-400 hover:text-purple-400 ml-4">
+<span class="iconify text-lg" data-icon="mdi:pencil-outline"></span>
+</button>
+
+</div>
+
+
+<!-- TRAVEL PREFERENCES -->
+<div>
+<label class="block text-sm text-gray-300 mb-1 ml-4">Travel Preferences</label>
+
+<div class="flex flex-wrap gap-2 ml-4 " id="preferenceChips">
+
+<span class="preference-tag cursor-pointer px-3 py-1.5 rounded-full border border-gray-400 text-sm text-gray-200 transition"
+data-value="Historic">Historic</span>
+
+<span class="preference-tag cursor-pointer px-3 py-1.5 rounded-full border border-gray-400 text-sm text-gray-200 transition"
+data-value="Chilling">Chilling</span>
+
+<span class="preference-tag cursor-pointer px-3 py-1.5 rounded-full border border-gray-400 text-sm text-gray-200 transition"
+data-value="Pilgrimage">Pilgrimage</span>
+
+<span class="preference-tag cursor-pointer px-3 py-1.5 rounded-full border border-gray-400 text-sm text-gray-200 transition"
+data-value="Adventure">Adventure</span>
+
+<span class="preference-tag cursor-pointer px-3 py-1.5 rounded-full border border-gray-400 text-sm text-gray-200 transition"
+data-value="Nature">Nature</span>
+
+</div>
+
+<p class="text-xs text-gray-400 mt-1 ml-4">Select one or more preferences</p>
+</div>
+
+
+<!-- CHANGE PASSWORD -->
+<div onclick="togglePasswordSection()" 
+class="p-5 border-b border-gray-800 flex items-center justify-between hover:bg-gray-800/40 transition cursor-pointer">
+
+<div class="flex items-center gap-3">
+<span class="iconify text-gray-400 text-xl" data-icon="mdi:lock-outline"></span>
+<p>Change Password</p>
+</div>
+
+<span class="iconify text-gray-400 text-xl" data-icon="mdi:chevron-down"></span>
+
+</div>
+<div id="passwordSection" class="hidden p-5 border-b border-gray-800">
+
+  <!-- Current Password -->
+  <div class="relative mb-3">
+    <input
+      type="password"
+      id="currentPassword"
+      placeholder="Current Password"
+      required
+      class="w-full px-3 py-2 rounded bg-white/10 border border-gray-600 text-white pr-10"
+    >
+    <span class="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-400"
+          onclick="togglePassword('currentPassword', this)">
+      <span class="iconify text-lg" data-icon="mdi:eye-outline"></span>
+    </span>
+  </div>
+
+  <!-- New Password -->
+  <div class="relative mb-3">
+    <input
+      type="password"
+      id="newPassword"
+      placeholder="New Password"
+      required
+      class="w-full px-3 py-2 rounded bg-white/10 border border-gray-600 text-white pr-10"
+    >
+    <span class="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-400"
+          onclick="togglePassword('newPassword', this)">
+      <span class="iconify text-lg" data-icon="mdi:eye-outline"></span>
+    </span>
+  </div>
+
+  <!-- Confirm Password -->
+  <div class="relative mb-4">
+    <input
+      type="password"
+      id="confirmPassword"
+      placeholder="Confirm Password"
+      required
+      class="w-full px-3 py-2 rounded bg-white/10 border border-gray-600 text-white pr-10"
+    >
+    <span class="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-400"
+          onclick="togglePassword('confirmPassword', this)">
+      <span class="iconify text-lg" data-icon="mdi:eye-outline"></span>
+    </span>
+  </div>
+
+  <button
+    onclick="updatePassword()"
+    class="px-5 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg"
+  >
+    Update Password
+  </button>
+
+</div>
+
+<!-- DELETE ACCOUNT -->
+<div id="deleteAccountBtn" 
+     class="p-5 flex items-center justify-center hover:bg-red-900/20 transition cursor-pointer rounded-lg">
+    <span class="iconify text-red-400 text-xl mr-2" data-icon="mdi:delete-outline"></span>
+    <p class="text-red-400 font-semibold">Delete Account</p>
+</div>
+
+<!-- DELETE ACCOUNT CONFIRMATION MODAL -->
+<div id="deleteModal" class="fixed inset-0 hidden flex items-center justify-center bg-black/50 z-50">
+  <!-- Modal Box -->
+  <div class="bg-[#1e293b] rounded-xl p-6 max-w-sm w-full text-center relative">
+    <p class="text-white mb-4">Are you sure you want to delete your account? This cannot be undone.</p>
+    <div class="flex justify-center gap-4">
+      <button id="confirmDelete" class="px-4 py-2 bg-red-600 rounded hover:bg-red-700 text-white">Yes, Delete</button>
+      <button id="cancelDelete" class="px-4 py-2 bg-gray-600 rounded hover:bg-gray-700 text-white">Cancel</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- SAVE BUTTON -->
+<div class="text-center mt-6 hidden" id="saveSection">
+
+<button onclick="saveProfile()"
+class="px-6 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition">
+
+Save Changes
+
+</button>
+
+</div>
+
+
+<!-- BACK BUTTON -->
+<div class="text-center mt-8">
+
+<a href="/dashboard"
+class="inline-block px-6 py-2 mb-4 rounded-lg bg-gray-700 hover:bg-gray-600 transition">
+
+Back to Dashboard
+
+</a>
+
+</div>
+
+</div>
+
+<!-- BLUR OVERLAY -->
+<div id="toastOverlay" class="fixed inset-0 bg-black/30 backdrop-blur-sm hidden z-40"></div>
+<!-- TOAST CONTAINER -->
+<div id="toastContainer" class="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"></div>
+<script>
+// ---------------- SHOW TOAST ----------------
+function showToast(message = "Success!", icon = "mdi:check-circle-outline", color = "text-green-400") {
+    const toastContainer = document.getElementById("toastContainer");
+    const overlay = document.getElementById("toastOverlay");
+
+    // Show overlay (blur & darken)
+    overlay.classList.remove("hidden");
+
+    // Create toast
+    const toast = document.createElement("div");
+    toast.className = "flex flex-col items-center justify-center bg-[#1e293b] px-6 py-4 rounded-lg shadow-lg text-center animate-fadeIn pointer-events-auto";
+    toast.innerHTML = `
+        <span class="iconify ${color} text-6xl mb-2" data-icon="${icon}"></span>
+        <p class="text-white font-semibold">${message}</p>
+    `;
+    toastContainer.appendChild(toast);
+
+    // Remove toast and overlay after 3 seconds
+    setTimeout(() => {
+        toast.classList.add("animate-fadeOut");
+        toast.addEventListener("animationend", () => {
+            toast.remove();
+            overlay.classList.add("hidden");
+        });
+    }, 3000);
+}
+// ---------------- SAVED PREFERENCES ----------------
+const savedPreferences = JSON.parse('{{ user.travel_preferences | tojson | safe }}');
+
+// ---------------- EMAIL VALIDATION ----------------
+function validateEmail(email) {
+    const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return pattern.test(email);
+}
+
+// ---------------- ENABLE EDIT ----------------
+function enableEdit(field){
+    const input = document.getElementById(field)
+    input.disabled = false
+    input.classList.add("border-b","border-purple-500")
+    document.getElementById("saveSection").classList.remove("hidden")
+}
+
+// ---------------- PREFERENCE CHIPS ----------------
+const chips = document.querySelectorAll(".preference-tag")
+chips.forEach(chip => {
+    const value = chip.dataset.value
+    if(savedPreferences.includes(value)){
+        chip.classList.add("bg-green-500","border-green-500","text-white")
+    }
+    chip.addEventListener("click", () => {
+        chip.classList.toggle("bg-green-500")
+        chip.classList.toggle("border-green-500")
+        chip.classList.toggle("text-white")
+        document.getElementById("saveSection").classList.remove("hidden")
+    })
+})
+
+// ---------------- TOGGLE PASSWORD SECTION ----------------
+function togglePasswordSection(){
+    const section = document.getElementById("passwordSection")
+    section.classList.toggle("hidden")
+}
+
+// ---------------- SAVE PROFILE ----------------
+function saveProfile() {
+    const username = document.getElementById("username").value;
+    const email = document.getElementById("email").value;
+    const emailError = document.getElementById("emailError");
+
+    // ----------------- Validate Email -----------------
+    if (!validateEmail(email)) {
+        emailError.classList.remove("hidden");
+        setTimeout(() => { emailError.classList.add("hidden"); }, 3000);
+        return;
+    } else {
+        emailError.classList.add("hidden");
+    }
+
+    // ----------------- Collect Preferences -----------------
+    const preferences = [];
+    document.querySelectorAll(".preference-tag.bg-green-500").forEach(tag => {
+        preferences.push(tag.dataset.value);
+    });
+
+    // ----------------- Send Update Request -----------------
+    fetch("/update-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, email, preferences })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            // Update displayed username/email on top
+            document.getElementById("displayUsername").innerText = username;
+            document.getElementById("displayEmail").innerText = email;
+
+            // Disable inputs and remove borders
+            const usernameInput = document.getElementById("username");
+            const emailInput = document.getElementById("email");
+            usernameInput.disabled = true;
+            emailInput.disabled = true;
+            usernameInput.classList.remove("border-b", "border-purple-500");
+            emailInput.classList.remove("border-b", "border-purple-500");
+
+            // Hide save button
+            document.getElementById("saveSection").classList.add("hidden");
+
+            // Show success toast
+            showToast("Changes saved successfully!", "mdi:check-circle-outline", "text-blue-400");
+
+        } else {
+            // Error toast
+            showToast("Error updating profile", "mdi:alert-circle-outline", "text-red-400");
+        }
+    })
+    .catch(err => {
+        console.error("Profile update error:", err);
+        showToast("Error updating profile", "mdi:alert-circle-outline", "text-red-400");
+    });
+}
+
+// ---------------- DELETE ACCOUNT WITH MODAL ----------------
+const deleteBtn = document.getElementById("deleteAccountBtn");
+const deleteModal = document.getElementById("deleteModal");
+const cancelDelete = document.getElementById("cancelDelete");
+const confirmDelete = document.getElementById("confirmDelete");
+
+// Show modal on click
+deleteBtn.addEventListener("click", () => {
+    deleteModal.classList.remove("hidden");
+    document.body.classList.add("overflow-hidden"); // prevent scroll
+});
+
+// Close modal on cancel
+cancelDelete.addEventListener("click", () => {
+    deleteModal.classList.add("hidden");
+    document.body.classList.remove("overflow-hidden");
+});
+
+// Confirm deletion
+confirmDelete.addEventListener("click", async () => {
+    try {
+        const res = await fetch("/delete-account", { method: "POST" });
+        const data = await res.json();
+
+        if (data.success) {
+            deleteModal.classList.add("hidden");
+            document.body.classList.remove("overflow-hidden");
+
+            // Show toast
+            showToast("Account deleted successfully!", "mdi:check-circle-outline", "text-red-400");
+
+            // Redirect after 2.5 seconds
+            setTimeout(() => {
+                window.location.href = "/";
+            }, 2500);
+        } else {
+            deleteModal.classList.add("hidden");
+            showToast("Error deleting account", "mdi:alert-circle-outline", "text-red-400");
+        }
+    } catch (err) {
+        console.error("Delete account error:", err);
+        deleteModal.classList.add("hidden");
+        showToast("Error deleting account", "mdi:alert-circle-outline", "text-red-400");
+    }
+});
+// ---------------- CHANGE PASSWORD ----------------
+async function updatePassword() {
+    const current = document.getElementById("currentPassword").value.trim();
+    const newPass = document.getElementById("newPassword").value.trim();
+    const confirmPass = document.getElementById("confirmPassword").value.trim();
+
+    let errorEl = document.getElementById("passwordError");
+    if (!errorEl) {
+        errorEl = document.createElement("p");
+        errorEl.id = "passwordError";
+        errorEl.className = "text-red-400 text-sm mb-2 text-center";
+        const passwordSection = document.getElementById("passwordSection");
+        passwordSection.insertBefore(errorEl, passwordSection.firstChild);
+    }
+
+    // --- Check for empty fields ---
+    if (!current || !newPass || !confirmPass) {
+        errorEl.innerText = "All password fields are required";
+        errorEl.classList.remove("hidden");
+        setTimeout(() => { errorEl.classList.add("hidden"); }, 3000);
+        return;
+    }
+
+    // --- Check for new password mismatch ---
+    if (newPass !== confirmPass) {
+        errorEl.innerText = "New password and confirm password do not match";
+        errorEl.classList.remove("hidden");
+        setTimeout(() => { errorEl.classList.add("hidden"); }, 3000);
+        return;
+    }
+
+    // --- Send fetch request ---
+    const res = await fetch("/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            current_password: current,
+            new_password: newPass,
+            confirm_password: confirmPass
+        })
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.success) {
+        showToast("Password updated successfully!");
+        document.getElementById("currentPassword").value = "";
+        document.getElementById("newPassword").value = "";
+        document.getElementById("confirmPassword").value = "";
+    } else {
+        errorEl.innerText = data.error || "Current password is incorrect";
+        errorEl.classList.remove("hidden");
+        setTimeout(() => { errorEl.classList.add("hidden"); }, 3000);
+    }
+}
+
+function togglePassword(fieldId, iconSpan) {
+  const input = document.getElementById(fieldId);
+  const icon = iconSpan.querySelector('.iconify');
+
+  if (input.type === "password") {
+    input.type = "text";
+    icon.dataset.icon = "mdi:eye-off-outline";
+  } else {
+    input.type = "password";
+    icon.dataset.icon = "mdi:eye-outline";
+  }
+}
+</script>
+
+<style>
+@keyframes fadeIn { 0% {opacity:0} 100% {opacity:1} }
+@keyframes fadeOut { 0% {opacity:1} 100% {opacity:0} }
+.animate-fadeIn { animation: fadeIn 0.3s ease forwards; }
+.animate-fadeOut { animation: fadeOut 0.3s ease forwards; }
+</style>
+
+</body>
+</html>

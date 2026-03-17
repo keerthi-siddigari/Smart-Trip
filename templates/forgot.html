@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Reset Password | SmartTrip</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://code.iconify.design/2/2.2.1/iconify.min.js"></script>
+<style>
+@keyframes float2 {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-15px); }
+  100% { transform: translateY(0px); }
+}
+.animate-float2 { animation: float2 8s ease-in-out infinite; }
+</style>
+</head>
+<body class="min-h-screen flex items-center justify-center bg-gray-900 text-white">
+<div class="absolute inset-0 overflow-hidden -z-10">
+  <div class="absolute top-20 left-10 w-16 h-16 bg-purple-500/20 rounded-full animate-float"></div>
+  <div class="absolute bottom-32 right-20 w-24 h-24 bg-pink-500/20 rounded-full animate-float2"></div>
+</div>
+<div class="w-full max-w-md p-6 sm:p-8 bg-white/10 backdrop-blur-lg rounded-2xl shadow-lg">
+  <h2 class="text-2xl font-bold mb-4 text-center">Reset Password</h2>
+
+  <p class="text-gray-300 text-sm text-center mb-6">
+    Enter your email and new password
+  </p>
+
+  <p id="error-msg" class="text-red-400 mb-2 hidden"></p>
+
+  <form id="reset-form" class="space-y-4">
+
+    <input type="email" id="email" placeholder="Email"
+           class="w-full p-3 rounded-lg bg-white/10 border border-white/20 focus:outline-none" required>
+
+    <!-- New Password -->
+<div class="relative">
+  <input type="password" id="new-password" placeholder="New Password"
+         class="w-full p-3 rounded-lg bg-white/10 border border-white/20 focus:outline-none pr-10" required>
+  <span class="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-400"
+        onclick="togglePassword('new-password', this)">
+    <span class="iconify text-lg" data-icon="mdi:eye-outline"></span>
+  </span>
+</div>
+
+<!-- Confirm Password -->
+<div class="relative">
+  <input type="password" id="confirm-password" placeholder="Confirm Password"
+         class="w-full p-3 rounded-lg bg-white/10 border border-white/20 focus:outline-none pr-10" required>
+  <span class="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-400"
+        onclick="togglePassword('confirm-password', this)">
+    <span class="iconify text-lg" data-icon="mdi:eye-outline"></span>
+  </span>
+</div>
+    <button type="submit" id="reset-btn"
+            class="w-full py-3 bg-purple-600 rounded-lg hover:scale-105 transition">
+      Reset Password
+    </button>
+  </form>
+</div>
+
+<script>
+const form = document.getElementById('reset-form');
+const resetBtn = document.getElementById('reset-btn');
+const errorMsg = document.getElementById('error-msg');
+
+// Create success message element
+const successMsg = document.createElement('p');
+successMsg.className = "text-green-400 mb-2 hidden";
+form.parentElement.insertBefore(successMsg, form);
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  errorMsg.classList.add('hidden');
+  successMsg.classList.add('hidden');
+  errorMsg.textContent = '';
+  successMsg.textContent = '';
+
+  const email = document.getElementById('email').value;
+  const new_password = document.getElementById('new-password').value;
+  const confirm_password = document.getElementById('confirm-password').value;
+
+  resetBtn.disabled = true;
+
+  try {
+    const response = await fetch('/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, new_password, confirm_password })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      successMsg.textContent = "Password reset successful! Redirecting to login...";
+      successMsg.classList.remove('hidden');
+
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 1500);
+
+    } else {
+      errorMsg.textContent = data.error || 'Reset failed';
+      errorMsg.classList.remove('hidden');
+    }
+
+  } catch (err) {
+    errorMsg.textContent = 'Server error, try again later';
+    errorMsg.classList.remove('hidden');
+  }
+
+  resetBtn.disabled = false;
+});
+
+function togglePassword(fieldId, iconSpan) {
+  const input = document.getElementById(fieldId);
+  const icon = iconSpan.querySelector('.iconify');
+
+  if (input.type === "password") {
+      input.type = "text";
+      icon.dataset.icon = "mdi:eye-off-outline";
+  } else {
+      input.type = "password";
+      icon.dataset.icon = "mdi:eye-outline";
+  }
+}
+</script>
+
+</body>
+</html>
