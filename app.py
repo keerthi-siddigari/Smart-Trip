@@ -315,4 +315,4 @@ app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_USE_SIGNER"] = True    # signs session cookies
 Session(app)
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()
