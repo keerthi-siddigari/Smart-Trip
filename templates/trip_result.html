@@ -56,18 +56,18 @@
     <h2 class="text-2xl font-semibold text-white">Trip Summary</h2>
     
     <div class="flex gap-4">
-      <!-- Save Button -->
-      {% if not is_view %}
-<button id="save-trip-btn"
-        class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition">
-  {% if session.get("editing_trip_id") %}
-    Update Trip
-  {% else %}
-    Save Trip
+  <!-- Save Button -->
+  {% if not is_view %}
+  <button id="save-trip-btn"
+          class="px-3 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition">
+    {% if session.get("editing_trip_id") %}
+      Update Trip
+    {% else %}
+      Save Trip
+    {% endif %}
+  </button>
   {% endif %}
-</button>
-{% endif %}
-    </div>
+</div>
   </div>
   <p class="text-gray-400 text-sm mt-2 mb-6">
   AI-generated travel plan for 
@@ -102,7 +102,11 @@
   <h2 class="text-xl sm:text-2xl font-semibold text-white mb-4 sm:mb-6">
     Itinerary Plan
   </h2>
-
+{% if is_view %}
+  <p class="text-sm text-gray-400 mb-2">
+    ✔️ Track places you’ve visited
+  </p>
+{% endif %}
   <!-- Swipe hint -->
   <span class="text-[11px] sm:text-xs text-gray-400 md:hidden">
     Swipe →
@@ -123,9 +127,21 @@
       <div class="p-4 sm:p-5 md:p-6">
 
         <!-- Title -->
-        <h3 class="text-sm sm:text-base font-semibold text-white mb-1 sm:mb-2">
-          Day {{ day.day }} - {{ day.place }}
-        </h3>
+        <div class="flex items-center justify-between">
+  <h3 class="text-sm sm:text-base font-semibold text-white">
+    Day {{ day.day }} - {{ day.place }}
+  </h3>
+
+  {% if is_view %}
+  <!-- ✔️ Visited Checkbox -->
+  <input 
+    type="checkbox"
+    class="accent-green-500 w-4 h-4"
+    {% if day.visited %}checked{% endif %}
+    onchange="toggleVisited('{{ day.place }}', this.checked)"
+  >
+{% endif %}
+</div>
 
         <!-- Details -->
         <p class="text-gray-400 text-xs sm:text-sm mt-1">
@@ -577,6 +593,29 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 });
 
+
+
+const currentTripId = "{{ trip.trip_id if trip.trip_id else 'null' }}";
+
+async function toggleVisited(place, visited) {
+    if (!currentTripId) return;
+
+    try {
+        const res = await fetch("/toggle-visited", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                trip_id: currentTripId,
+                place_name: place,
+                visited: visited
+            })
+        });
+        const data = await res.json();
+        if (!data.success) console.error(data.error);
+    } catch (err) {
+        console.error(err);
+    }
+}
 
 </script>
 </body>

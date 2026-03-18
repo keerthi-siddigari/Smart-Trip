@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, session, redirect, current_app
+from flask import Blueprint, render_template, request, session, redirect, current_app,jsonify
 import os, json, re, requests, urllib.parse, random
 from groq import Groq
 from dotenv import load_dotenv
@@ -9,34 +9,54 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 @trips_routes.route("/view-trip/<int:trip_id>")
 def view_trip(trip_id):
-
     if "user_id" not in session:
         return redirect("/login")
 
     conn = current_app.config["MYSQL_CONNECTION"].connection
     cursor = conn.cursor(MySQLdb.cursors.DictCursor)
 
+    # Fetch trip for the current user
     cursor.execute("""
         SELECT * FROM trips
         WHERE id=%s AND user_id=%s
     """, (trip_id, session["user_id"]))
-
     trip = cursor.fetchone()
-    cursor.close()
 
     if not trip:
+        cursor.close()
         return "Trip not found", 404
 
+    #  Load trip JSON
     trip_data = json.loads(trip["ai_data"])
 
+    #  Fetch visited_places for this trip
+    cursor.execute("""
+        SELECT place_name, visited
+        FROM visited_places
+        WHERE trip_id=%s
+    """, (trip_id,))
+    visited_rows = cursor.fetchall()
+    cursor.close()
+
+    #  Create a map of place_name -> visited
+    visited_map = {row["place_name"]: row["visited"] for row in visited_rows}
+
+    #  Merge visited info into daily_plan
+    for day in trip_data.get("daily_plan", []):
+        day["visited"] = visited_map.get(day["place"], False)
+    # After merging visited info
+    trip_data["trip_id"] = trip_id
+    #  Render template
     return render_template(
         "trip_result.html",
         trip=trip_data,
         destination=trip["destination"],
         duration=trip["duration"],
         travel_type=trip["travel_type"],
-        is_view=True
+        is_view=True,
+        trip_id=trip_id
     )
+
 
 @trips_routes.route("/edit-trip/<int:trip_id>")
 def edit_trip(trip_id):
@@ -672,3 +692,50 @@ def trip_result():
         budget_type=trip_data["budget_type"],
         is_view=False
     )
+
+@trips_routes.route("/toggle-visited", methods=["POST"])
+def toggle_visited():
+    if "user_id" not in session:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+
+    data = request.get_json()
+    trip_id = data.get("trip_id")
+    place_name = data.get("place_name")
+    visited = data.get("visited")
+
+    if not all([trip_id, place_name]) or visited is None:
+        return jsonify({"success": False, "error": "Missing data"}), 400
+
+    conn = current_app.config["MYSQL_CONNECTION"].connection
+    cursor = conn.cursor(MySQLdb.cursors.DictCursor)
+
+    try:
+        # Check if this place already exists
+        cursor.execute("""
+            SELECT id FROM visited_places 
+            WHERE trip_id=%s AND place_name=%s
+        """, (trip_id, place_name))
+        row = cursor.fetchone()
+
+        if row:
+            # Update existing row
+            cursor.execute("""
+                UPDATE visited_places 
+                SET visited=%s
+                WHERE id=%s
+            """, (visited, row["id"]))
+        else:
+            # Insert new row
+            cursor.execute("""
+                INSERT INTO visited_places (trip_id, place_name, visited)
+                VALUES (%s, %s, %s)
+            """, (trip_id, place_name, visited))
+
+        conn.commit()
+        cursor.close()
+        return jsonify({"success": True})
+
+    except Exception as e:
+        cursor.close()
+        print("Error toggling visited:", e)
+        return jsonify({"success": False, "error": "Database error"}), 500

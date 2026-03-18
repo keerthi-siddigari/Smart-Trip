@@ -165,6 +165,8 @@ def features():
 def create_trip():
     if 'user_id' not in session:
         return redirect("/login")
+    # Clear editing flag for new trips
+    session.pop("editing_trip_id", None)
     # Query params
     prefill_flag = request.args.get("prefill")  # e.g., ?prefill=1
     destination_param = request.args.get("destination")  # e.g., from recommended trip
