@@ -60,7 +60,11 @@
       {% if not is_view %}
 <button id="save-trip-btn"
         class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition">
-  Save Trip
+  {% if session.get("editing_trip_id") %}
+    Update Trip
+  {% else %}
+    Save Trip
+  {% endif %}
 </button>
 {% endif %}
     </div>
@@ -550,11 +554,18 @@ document.addEventListener("DOMContentLoaded", function() {
         const data = await response.json();
 
         if (data.success) {
-          if (data.already_saved) {
-            showToast(true, "Trip already saved!");
-          } else {
-            showToast(true, "Trip saved successfully!");
-          }
+
+  if (data.updated) {
+    showToast(true, "Trip updated successfully! ✏️");
+    
+  } else if (data.already_saved) {
+    showToast(true, "Trip already saved!");
+    
+  } else {
+    showToast(true, "Trip saved successfully!");
+  }
+
+
         } else {
           showToast(false, data.error || "Error saving trip. Please try again later.");
         }

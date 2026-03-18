@@ -43,7 +43,7 @@ def edit_trip(trip_id):
 
     if "user_id" not in session:
         return redirect("/login")
-
+    session["editing_trip_id"] = trip_id
     conn = current_app.config["MYSQL_CONNECTION"].connection
     cursor = conn.cursor(MySQLdb.cursors.DictCursor)
 
@@ -160,8 +160,11 @@ def extract_json(text):
                 cleaned = match.group()
 
                 # Fix common AI JSON mistakes
-                cleaned = cleaned.replace(",}", "}")
-                cleaned = cleaned.replace(",]", "]")
+                # Fix missing quotes on keys
+                cleaned = re.sub(r'(\w+):', r'"\1":', cleaned)
+
+                # Remove trailing commas
+                cleaned = cleaned.replace(",}", "}").replace(",]", "]")
 
                 return json.loads(cleaned)
         except:
@@ -314,7 +317,7 @@ Generate:
 - EXACTLY 6 itinerary places in {destination} for {trip_purpose}
 - EXACTLY 5 top attractions in {destination}
 - EXACTLY 3 things to do in {destination}
-- EXACTLY 3 famous foods in{destination}
+- EXACTLY 3 famous foods in {destination}
 - EXACTLY 3 accommodations in {destination}
 
 Accommodation must include price_per_night in LOCAL currency.
@@ -388,6 +391,7 @@ JSON format:
 
         ai_text = response.choices[0].message.content
         trip_data = extract_json(ai_text)
+        
         #-----Fallback if AI fails-------
         if not trip_data:
              trip_data = {
@@ -398,6 +402,21 @@ JSON format:
                 "accommodations": [],
                 "transport": []
             }
+             # ---------------- Transport Cleanup ----------------
+        clean_transport = []
+
+        for t in trip_data.get("transport", []):
+            if isinstance(t, dict):
+        # AI returned object like {type:"flight"...}
+                 clean_transport.append(
+                 f"{t.get('type', '').title()} - {t.get('duration', '')}"
+                )
+            elif isinstance(t, str):
+                clean_transport.append(t)
+            else:
+                clean_transport.append(str(t))
+
+        trip_data["transport"] = clean_transport
     except Exception as e:
         print("AI error:", e)
         trip_data = {
@@ -574,18 +593,41 @@ def save_trip():
     if not trip_data:
         return {"success": False, "error": "No trip data in session"}, 400
 
-    # If trip is already saved, return a different response
-    if "trip_id" in trip_data:
-        return {"success": True, "already_saved": True, "trip_id": trip_data["trip_id"]}
-
-    ai_json = json.dumps(trip_data)
-
     conn = current_app.config["MYSQL_CONNECTION"].connection
     cursor = conn.cursor()
 
     try:
-       
-        # Always INSERT for new trip
+        ai_json = json.dumps(trip_data)
+
+        #  CHECK IF EDIT MODE
+        if "editing_trip_id" in session:
+            trip_id = session["editing_trip_id"]
+
+            cursor.execute("""
+                UPDATE trips
+                SET destination=%s, start_date=%s, duration=%s,
+                    budget=%s, travel_type=%s, ai_data=%s
+                WHERE id=%s AND user_id=%s
+            """, (
+                trip_data["destination"],
+                trip_data["inputs"].get("start_date"),
+                trip_data["duration"],
+                str(trip_data["budget_total"]),
+                trip_data["travel_type"],
+                ai_json,
+                trip_id,
+                session["user_id"]
+            ))
+
+            conn.commit()
+            cursor.close()
+
+            #  clear edit mode
+            session.pop("editing_trip_id", None)
+
+            return {"success": True, "updated": True, "trip_id": trip_id}
+
+        #  NORMAL SAVE (INSERT)
         cursor.execute("""
             INSERT INTO trips (user_id, destination, start_date, duration, budget, travel_type, ai_data)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -603,7 +645,6 @@ def save_trip():
         conn.commit()
         cursor.close()
 
-        # Update session with new trip_id
         trip_data["trip_id"] = trip_id
         session["latest_trip"] = trip_data
 
@@ -612,9 +653,7 @@ def save_trip():
     except Exception as e:
         cursor.close()
         print("Error saving trip:", e)
-        return {"success": False, "error": "Error saving trip. Please try again later."}, 500
-
-
+        return {"success": False, "error": "Error saving trip"}, 500
 
 
 @trips_routes.route("/trip-result")
