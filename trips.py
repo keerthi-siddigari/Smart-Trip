@@ -437,6 +437,14 @@ JSON format:
                 clean_transport.append(str(t))
 
         trip_data["transport"] = clean_transport
+        # ---------------- Transport Fallback ----------------
+        if not trip_data["transport"]:
+            if start_city.lower() == destination.lower():
+                 trip_data["transport"] = ["Local travel by car/train/bus"]
+            elif destination.lower() in INTERNATIONAL_CITIES:
+                 trip_data["transport"] = [f"Flight from {start_city} to {destination}"]
+            else:
+             trip_data["transport"] = [f"Flight or train from {start_city} to {destination}"]
     except Exception as e:
         print("AI error:", e)
         trip_data = {
