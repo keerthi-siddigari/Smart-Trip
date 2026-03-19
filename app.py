@@ -52,7 +52,10 @@ def dashboard():
 
     
     preferences = json.loads(user["travel_preferences"])
-    recommended_places = get_recommendations(preferences)
+    if preferences:
+        recommended_places = get_recommendations(preferences)
+    else:
+        recommended_places=[]
     cursor.execute("""
         SELECT id, destination, duration, budget, travel_type, start_date, status
         FROM trips

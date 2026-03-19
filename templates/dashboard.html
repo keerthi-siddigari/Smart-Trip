@@ -102,42 +102,38 @@
    <h3 id="completed-trips" class="text-3xl font-bold text-purple-400 mt-2">{{ completed_trips or 0 }}</h3>
     </div>
   </section>
+{% if recommended_places %}
 <div class="mt-10">
   <h3 class="text-xl font-semibold text-white mb-6">
     Recommended For You 
   </h3>
-<p class="text-gray-400 text-sm mt-1 mb-6">
-  Based on your travel preferences, here are some destinations you might enjoy.
-</p>
+  <p class="text-gray-400 text-sm mt-1 mb-6">
+    Based on your travel preferences, here are some destinations you might enjoy.
+  </p>
   <div class="flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory custom-scrollbar">
-  
-  {% for place in recommended_places %}
-
-  <div class="min-w-[260px] bg-[#1e293b] rounded-xl overflow-hidden border border-gray-800 hover:border-purple-500 transition snap-start">
-
-    <img src="{{ place.image }}" class="w-full h-40 object-cover">
-
-    <div class="p-4">
-      <h4 class="text-lg font-semibold text-white">
-        {{ place.name }}
-      </h4>
-
-      <p class="text-gray-400 text-sm mt-2">
-        {{ place.desc }}
-      </p>
-
-      <a href="/create-trip?destination={{ place.name }}"
-         class="text-purple-400 text-sm mt-3 inline-block">
-         Plan Trip →
-      </a>
+    {% for place in recommended_places %}
+    <div class="min-w-[260px] bg-[#1e293b] rounded-xl overflow-hidden border border-gray-800 hover:border-purple-500 transition snap-start">
+      <img src="{{ place.image }}" class="w-full h-40 object-cover">
+      <div class="p-4">
+        <h4 class="text-lg font-semibold text-white">{{ place.name }}</h4>
+        <p class="text-gray-400 text-sm mt-2">{{ place.desc }}</p>
+        <a href="/create-trip?destination={{ place.name }}" class="text-purple-400 text-sm mt-3 inline-block">
+           Plan Trip →
+        </a>
+      </div>
     </div>
-
+    {% endfor %}
   </div>
-
-  {% endfor %}
-
 </div>
+{% else %}
+<div class="mt-10 p-6 bg-[#1e293b] rounded-xl border border-gray-800 text-gray-400 text-center">
+  <h3 class="text-xl font-semibold text-white mb-4">Recommended For You</h3>
+  <p>You haven’t selected any preferences yet, so no recommendations are available.</p>
+  <a href="/profile" class="text-purple-400 text-sm mt-3 inline-block">
+    Set Preferences → 
+  </a>
 </div>
+{% endif %}
   <!-- My Trips Header -->
   <div class="flex justify-between items-center mb-3 mt-6">
     <h3 class="text-2xl font-semibold text-white">My Trips</h3>

@@ -540,7 +540,8 @@ JSON format:
         for i in range(duration):
 
             card = original_daily[i % len(original_daily)].copy()
-
+            # ✅ Clean the place name
+            card["place"] = card.get("place", "").strip().lstrip("/")
             card["day"] = i + 1
 
             img = fetch_image(f"{card['place']} {destination}")
