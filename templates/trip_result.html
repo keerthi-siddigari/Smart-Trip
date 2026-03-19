@@ -59,8 +59,9 @@
   <!-- Save Button -->
   {% if not is_view %}
   <button id="save-trip-btn"
-          class="px-3 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition">
-    {% if session.get("editing_trip_id") %}
+          class="px-3 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition"
+    data-is-edit="{{ session.get('editing_trip_id') is not none | tojson }}">
+          {% if session.get("editing_trip_id") %}
       Update Trip
     {% else %}
       Save Trip
@@ -564,33 +565,42 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 
   if (saveBtn) {
-    saveBtn.addEventListener("click", async function() {
-      try {
-        const response = await fetch("/save-trip", { method: "POST" });
-        const data = await response.json();
+  saveBtn.addEventListener("click", async function() {
+    try {
 
-        if (data.success) {
+      const isEdit = saveBtn.dataset.isEdit === "true";
 
-  if (data.updated) {
-    showToast(true, "Trip updated successfully! ✏️");
-    
-  } else if (data.already_saved) {
-    showToast(true, "Trip already saved!");
-    
-  } else {
-    showToast(true, "Trip saved successfully!");
-  }
+      const url = isEdit ? "/update-trip" : "/save-trip";
 
+      const response = await fetch(url, { method: "POST" });
+      const data = await response.json();
 
+      if (data.success) {
+
+        if (isEdit) {
+          if (data.already_updated) {
+            showToast(true, "Trip already updated!");
+          } else {
+            showToast(true, "Trip updated successfully! ✏️");
+          }
         } else {
-          showToast(false, data.error || "Error saving trip. Please try again later.");
+          if (data.already_saved) {
+            showToast(true, "Trip already saved!");
+          } else {
+            showToast(true, "Trip saved successfully!");
+          }
         }
-      } catch (err) {
-        showToast(false, "Error saving trip. Please try again later.");
-        console.error(err);
+
+      } else {
+        showToast(false, data.error || "Something went wrong");
       }
-    });
-  }
+
+    } catch (err) {
+      showToast(false, "Error occurred");
+      console.error(err);
+    }
+  });
+}
 });
 
 

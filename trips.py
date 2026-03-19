@@ -3,6 +3,7 @@ import os, json, re, requests, urllib.parse, random
 from groq import Groq
 from dotenv import load_dotenv
 import MySQLdb.cursors
+import uuid
 load_dotenv()
 trips_routes = Blueprint("trips", __name__)
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
@@ -64,6 +65,7 @@ def edit_trip(trip_id):
     if "user_id" not in session:
         return redirect("/login")
     session["editing_trip_id"] = trip_id
+
     conn = current_app.config["MYSQL_CONNECTION"].connection
     cursor = conn.cursor(MySQLdb.cursors.DictCursor)
 
@@ -93,6 +95,67 @@ def edit_trip(trip_id):
     transport_mode=inputs.get("transport_mode"),
     trip_style=inputs.get("trip_style")
     )
+
+@trips_routes.route("/update-trip", methods=["POST"])
+def update_trip():
+    if "user_id" not in session or "editing_trip_id" not in session:
+        return {"success": False, "error": "Unauthorized"}, 401
+
+    trip_data = session.get("latest_trip")
+    if not trip_data:
+        return {"success": False, "error": "No trip data in session"}, 400
+
+    trip_id = session["editing_trip_id"]
+
+    conn = current_app.config["MYSQL_CONNECTION"].connection
+    cursor = conn.cursor()
+
+    try:
+        # ✅ Check current DB data
+        cursor.execute("""
+            SELECT ai_data FROM trips
+            WHERE id=%s AND user_id=%s
+        """, (trip_id, session["user_id"]))
+
+        row = cursor.fetchone()
+
+        if row and row[0] == json.dumps(trip_data):
+            cursor.close()
+            return {
+                "success": True,
+                "already_updated": True,
+                "trip_id": trip_id
+            }
+
+        # ✅ Update trip
+        cursor.execute("""
+            UPDATE trips
+            SET destination=%s, start_date=%s, duration=%s, budget=%s, travel_type=%s, ai_data=%s
+            WHERE id=%s AND user_id=%s
+        """, (
+            trip_data["destination"],
+            trip_data["inputs"].get("start_date"),
+            trip_data["duration"],
+            str(trip_data["budget_total"]),
+            trip_data["travel_type"],
+            json.dumps(trip_data),
+            trip_id,
+            session["user_id"]
+        ))
+
+        conn.commit()
+        cursor.close()
+
+        return {
+            "success": True,
+            "already_updated": False,
+            "trip_id": trip_id
+        }
+
+    except Exception as e:
+        cursor.close()
+        print("Error updating trip:", e)
+        return {"success": False, "error": "Error updating trip"}, 500
 
 # ---------------- Limits ----------------
 TOP_ATTRACTIONS_LIMIT = 5
@@ -354,6 +417,7 @@ IMPORTANT RULE: DO NOT LEAVE ANY FIELD EMPTY.
 Transport Rules:
 If start city and destination are in different countries → suggest flight.
 If they are in the same country → suggest flight or train.
+If start city and destination are same then only suggest local transport.
 Never suggest car for international travel.
 JSON format:
 
@@ -619,48 +683,39 @@ def save_trip():
 
     trip_data = session.get("latest_trip")
     if not trip_data:
-        return {"success": False, "error": "No trip data in session"}, 400
+        return {"success": False, "error": "No trip data"}, 400
 
     conn = current_app.config["MYSQL_CONNECTION"].connection
     cursor = conn.cursor()
 
     try:
+        # ✅ If trip already has UID → check DB
+        if trip_data.get("trip_uid"):
+            cursor.execute("""
+                SELECT id FROM trips WHERE trip_uid=%s AND user_id=%s
+            """, (trip_data["trip_uid"], session["user_id"]))
+            existing = cursor.fetchone()
+
+            if existing:
+                cursor.close()
+                return {
+                    "success": True,
+                    "already_saved": True,
+                    "trip_id": existing[0]
+                }
+
+        # ✅ Generate UID for new trip
+        trip_uid = str(uuid.uuid4())
+
         ai_json = json.dumps(trip_data)
 
-        #  CHECK IF EDIT MODE
-        if "editing_trip_id" in session:
-            trip_id = session["editing_trip_id"]
-
-            cursor.execute("""
-                UPDATE trips
-                SET destination=%s, start_date=%s, duration=%s,
-                    budget=%s, travel_type=%s, ai_data=%s
-                WHERE id=%s AND user_id=%s
-            """, (
-                trip_data["destination"],
-                trip_data["inputs"].get("start_date"),
-                trip_data["duration"],
-                str(trip_data["budget_total"]),
-                trip_data["travel_type"],
-                ai_json,
-                trip_id,
-                session["user_id"]
-            ))
-
-            conn.commit()
-            cursor.close()
-
-            #  clear edit mode
-            session.pop("editing_trip_id", None)
-
-            return {"success": True, "updated": True, "trip_id": trip_id}
-
-        #  NORMAL SAVE (INSERT)
         cursor.execute("""
-            INSERT INTO trips (user_id, destination, start_date, duration, budget, travel_type, ai_data)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO trips 
+            (user_id, trip_uid, destination, start_date, duration, budget, travel_type, ai_data)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             session["user_id"],
+            trip_uid,
             trip_data["destination"],
             trip_data["inputs"].get("start_date"),
             trip_data["duration"],
@@ -673,6 +728,8 @@ def save_trip():
         conn.commit()
         cursor.close()
 
+        # ✅ Save UID in session
+        trip_data["trip_uid"] = trip_uid
         trip_data["trip_id"] = trip_id
         session["latest_trip"] = trip_data
 
@@ -680,8 +737,9 @@ def save_trip():
 
     except Exception as e:
         cursor.close()
-        print("Error saving trip:", e)
-        return {"success": False, "error": "Error saving trip"}, 500
+        print("Error:", e)
+        return {"success": False, "error": "DB error"}, 500
+
 
 
 @trips_routes.route("/trip-result")
