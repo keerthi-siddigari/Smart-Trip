@@ -131,6 +131,7 @@ def profile():
         user["travel_preferences"] = []
 
     return render_template("profile.html", user=user)
+
 @app.route("/delete-trip/<int:trip_id>", methods=["POST"])
 def delete_trip(trip_id):
     if 'user_id' not in session:
@@ -140,14 +141,25 @@ def delete_trip(trip_id):
 
     try:
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        # Delete the trip
         cursor.execute("DELETE FROM trips WHERE id=%s AND user_id=%s", (trip_id, user_id))
         mysql.connection.commit()
+
+        # Check if there are any trips left
+        cursor.execute("SELECT COUNT(*) as trip_count FROM trips WHERE user_id=%s", (user_id,))
+        remaining = cursor.fetchone()
         cursor.close()
-        return jsonify({"success": True, "message": "Trip deleted"})
+
+        no_trips_left = remaining['trip_count'] == 0
+
+        return jsonify({
+            "success": True,
+            "message": "Trip deleted",
+            "no_trips_left": no_trips_left  # <-- frontend can use this
+        })
     except Exception as e:
         print("Error deleting trip:", e)
         return jsonify({"success": False, "message": "Error deleting trip"}), 500
-
 # ----------------- Other routes -----------------
 
 @app.route("/")

@@ -142,9 +142,9 @@
   </div>
 
 <!-- Empty state message -->
-{% if not trips %}
-  <p class="text-gray-500 mb-6">No trips yet. Generate your first adventure!</p>
-{% endif %}
+<p id="no-trips-msg" class="text-gray-500 mb-6 {% if trips %}hidden{% endif %}">
+  No trips yet. Generate your first adventure!
+</p>
 
   <!-- Trips Grid -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

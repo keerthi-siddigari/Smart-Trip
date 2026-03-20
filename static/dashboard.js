@@ -28,6 +28,7 @@ document.getElementById('cancelDelete')?.addEventListener('click', () => {
 });
 
 // Confirm delete
+// Confirm delete
 document.getElementById('confirmDelete')?.addEventListener('click', () => {
     if (!tripToDelete) return;
 
@@ -38,35 +39,21 @@ document.getElementById('confirmDelete')?.addEventListener('click', () => {
     .then(res => res.json())
     .then(data => {
         if (data.success) {
+            // Use the removeTripFromUI function!
+            removeTripFromUI(tripToDelete, data.no_trips_left);
+
+            // Show success content in modal
             const confirmContent = document.getElementById('deleteConfirmContent');
             const successContent = document.getElementById('deleteSuccessContent');
-
             if (confirmContent) confirmContent.classList.add('hidden');
             if (successContent) successContent.classList.remove('hidden');
-
-            // Remove trip card and update stats
-            const tripCard = document.querySelector(`[data-trip-id='${tripToDelete}']`);
-            if (tripCard) {
-                const statusEl = tripCard.querySelector('span');
-                const statusText = statusEl ? statusEl.textContent.trim() : '';
-
-                tripCard.remove();
-
-                // Update dashboard stats
-                const totalEl = document.getElementById('total-trips');
-                const upcomingEl = document.getElementById('upcoming-trips');
-                const completedEl = document.getElementById('completed-trips');
-
-                if (totalEl) totalEl.textContent = Math.max(0, parseInt(totalEl.textContent) - 1);
-                if (statusText === 'Upcoming' && upcomingEl) upcomingEl.textContent = Math.max(0, parseInt(upcomingEl.textContent) - 1);
-                if (statusText === 'Completed' && completedEl) completedEl.textContent = Math.max(0, parseInt(completedEl.textContent) - 1);
-            }
 
             // Hide modal automatically after 2s
             setTimeout(() => {
                 document.getElementById('deleteModal')?.classList.add('hidden');
                 tripToDelete = null;
             }, 2000);
+
         } else {
             alert("Error: " + (data.message || "Unable to delete trip"));
         }
@@ -79,7 +66,6 @@ document.getElementById('confirmDelete')?.addEventListener('click', () => {
     });
 });
 
-
 function handleLogout() {
 
   const btn = document.getElementById("logoutBtn");
@@ -89,4 +75,31 @@ function handleLogout() {
   btn.disabled = true;
 
   window.location.href = "/logout";
+}
+
+// After deleting a trip
+function removeTripFromUI(tripId, noTripsLeft) {
+    // Remove trip card and update stats
+    const tripCard = document.querySelector(`[data-trip-id='${tripId}']`);
+    if (tripCard) {
+        const statusEl = tripCard.querySelector('span');
+        const statusText = statusEl ? statusEl.textContent.trim() : '';
+
+        tripCard.remove();
+
+        // Update dashboard stats
+        const totalEl = document.getElementById('total-trips');
+        const upcomingEl = document.getElementById('upcoming-trips');
+        const completedEl = document.getElementById('completed-trips');
+
+        if (totalEl) totalEl.textContent = Math.max(0, parseInt(totalEl.textContent) - 1);
+        if (statusText === 'Upcoming' && upcomingEl) upcomingEl.textContent = Math.max(0, parseInt(upcomingEl.textContent) - 1);
+        if (statusText === 'Completed' && completedEl) completedEl.textContent = Math.max(0, parseInt(completedEl.textContent) - 1);
+    }
+
+    // Show "No trips yet" message if no trips left
+    if (noTripsLeft) {
+        const noTripsMsg = document.getElementById('no-trips-msg');
+        if (noTripsMsg) noTripsMsg.classList.remove('hidden');
+    }
 }
