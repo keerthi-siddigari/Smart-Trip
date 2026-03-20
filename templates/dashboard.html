@@ -113,7 +113,7 @@
   <div class="flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory custom-scrollbar">
     {% for place in recommended_places %}
     <div class="min-w-[260px] bg-[#1e293b] rounded-xl overflow-hidden border border-gray-800 hover:border-purple-500 transition snap-start">
-      <img src="{{ place.image }}" class="w-full h-40 object-cover">
+      <img src="{{ place.image }}" class="w-full h-40 object-cover" loading="lazy">
       <div class="p-4">
         <h4 class="text-lg font-semibold text-white">{{ place.name }}</h4>
         <p class="text-gray-400 text-sm mt-2">{{ place.desc }}</p>

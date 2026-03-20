@@ -121,7 +121,7 @@
       <div class="w-full h-40 sm:h-48 bg-gray-800">
         <img 
           src="{{ day.image if day.image_found else '/static/default-itinerary.png' }}"
-          class="w-full h-full object-cover">
+          class="w-full h-full object-cover" loading="lazy">
       </div>
 
       <!-- Content -->
@@ -134,7 +134,7 @@
   </h3>
 
   {% if is_view %}
-  <!-- ✔️ Visited Checkbox -->
+  <!-- Visited Checkbox -->
   <input 
     type="checkbox"
     class="accent-green-500 w-4 h-4"
@@ -199,7 +199,7 @@
       <div class="w-full h-40 sm:h-48 bg-gray-800">
         <img 
           src="{{ place.image if place.image_found else '/static/default-attraction.png' }}"
-          class="w-full h-full object-cover">
+          class="w-full h-full object-cover" loading="lazy">
       </div>
 
       <!-- Content -->
@@ -349,7 +349,7 @@
       <div class="w-full h-40 sm:h-48 bg-gray-800">
         <img 
           src="{{ stay.image if stay.image_found else '/static/default-accommodation.png' }}"
-          class="w-full h-full object-cover">
+          class="w-full h-full object-cover" loading="lazy">
       </div>
 
       <!-- Content -->
@@ -407,7 +407,7 @@
       <div class="w-full h-40 sm:h-48 bg-gray-800">
         <img 
           src="{{ food.image if food.image_found else '/static/default-food.png' }}"
-          class="w-full h-full object-cover">
+          class="w-full h-full object-cover" loading="lazy">
       </div>
 
       <!-- Content -->
@@ -538,7 +538,7 @@
   </div>
 </div>
 <script>
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
   const saveBtn = document.getElementById("save-trip-btn");
   const modal = document.getElementById("tripSaveModal");
   const messageEl = document.getElementById("tripSaveMessage");
@@ -546,11 +546,11 @@ document.addEventListener("DOMContentLoaded", function() {
 
   function showToast(success, message) {
     if (success) {
-      iconEl.dataset.icon = "mdi:check-circle-outline";  
+      iconEl.dataset.icon = "mdi:check-circle-outline";
       iconEl.classList.add("text-green-400");
       iconEl.classList.remove("text-red-500");
     } else {
-      iconEl.dataset.icon = "mdi:close-circle-outline"; 
+      iconEl.dataset.icon = "mdi:close-circle-outline";
       iconEl.classList.add("text-red-500");
       iconEl.classList.remove("text-green-400");
     }
@@ -558,49 +558,55 @@ document.addEventListener("DOMContentLoaded", function() {
     messageEl.textContent = message;
     modal.classList.remove("hidden");
 
-    // Hide after 2.5 seconds
     setTimeout(() => {
       modal.classList.add("hidden");
     }, 2500);
   }
 
   if (saveBtn) {
-  saveBtn.addEventListener("click", async function() {
-    try {
-
+    saveBtn.addEventListener("click", async function () {
       const isEdit = saveBtn.dataset.isEdit === "true";
-
       const url = isEdit ? "/update-trip" : "/save-trip";
 
-      const response = await fetch(url, { method: "POST" });
-      const data = await response.json();
+      //  LOADING STATE START
+      const originalText = saveBtn.innerText;
+      saveBtn.innerText = isEdit ? "Updating..." : "Saving...";
+      saveBtn.disabled = true;
+      saveBtn.classList.add("opacity-70", "cursor-not-allowed");
+      // LOADING STATE END
 
-      if (data.success) {
+      try {
+        const response = await fetch(url, { method: "POST" });
+        const data = await response.json();
 
-        if (isEdit) {
-          if (data.already_updated) {
-            showToast(true, "Trip already updated!");
+        if (data.success) {
+          if (isEdit) {
+            if (data.already_updated) {
+              showToast(true, "Trip already updated!");
+            } else {
+              showToast(true, "Trip updated successfully! ✏️");
+            }
           } else {
-            showToast(true, "Trip updated successfully! ✏️");
+            if (data.already_saved) {
+              showToast(true, "Trip already saved!");
+            } else {
+              showToast(true, "Trip saved successfully!");
+            }
           }
         } else {
-          if (data.already_saved) {
-            showToast(true, "Trip already saved!");
-          } else {
-            showToast(true, "Trip saved successfully!");
-          }
+          showToast(false, data.error || "Something went wrong");
         }
-
-      } else {
-        showToast(false, data.error || "Something went wrong");
+      } catch (err) {
+        console.error(err);
+        showToast(false, "Error occurred");
       }
 
-    } catch (err) {
-      showToast(false, "Error occurred");
-      console.error(err);
-    }
-  });
-}
+      //  ALWAYS RESET BUTTON (runs after success OR error)
+      saveBtn.innerText = originalText;
+      saveBtn.disabled = false;
+      saveBtn.classList.remove("opacity-70", "cursor-not-allowed");
+    });
+  }
 });
 
 
