@@ -68,6 +68,21 @@
     {% endif %}
   </button>
   {% endif %}
+
+  {% if is_view %}
+  <div class="relative">
+  <button id="share-trip-btn" data-share-token="{{ trip.share_token }}"
+          class="px-3 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition flex items-center gap-1">
+    <span class="iconify" data-icon="mdi:share-variant-outline"></span>
+    Share
+  </button>
+  
+<!-- Toast box -->
+  <div id="share-toast" class="hidden absolute left-1/2 transform -translate-x-1/2 mt-2 bg-green-500 text-white px-3 py-1 rounded shadow text-sm">
+    Link copied!
+  </div>
+  </div>
+  {% endif %}
 </div>
   </div>
   <p class="text-gray-400 text-sm mt-2 mb-6">
@@ -632,6 +647,49 @@ async function toggleVisited(place, visited) {
         console.error(err);
     }
 }
+
+
+
+const shareButton = document.getElementById("share-trip-btn");
+
+if (shareButton) {
+    shareButton.addEventListener("click", function() {
+        const token = this.dataset.shareToken;
+        if (!token) return alert("No share token available!");
+
+        const shareUrl = `${window.location.origin}/trip/share/${token}`;
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+           navigator.clipboard.writeText(shareUrl)
+           .then(() => showShareToast("Link copied!"))
+           .catch(() => fallbackCopy(shareUrl));
+        } else {
+            fallbackCopy(shareUrl);
+        }
+    });
+}
+function fallbackCopy(text) {
+    const tempInput = document.createElement("input");
+    tempInput.value = text;
+    document.body.appendChild(tempInput);
+    tempInput.select();
+    document.execCommand("copy");
+    document.body.removeChild(tempInput);
+    showShareToast("Link copied!");
+}
+
+function showShareToast(message) {
+    const toast = document.getElementById("share-toast");
+    toast.textContent = message;
+    toast.classList.remove("hidden");
+    toast.classList.add("opacity-100");
+    setTimeout(() => {
+        toast.classList.add("hidden");
+        toast.classList.remove("opacity-100");
+    }, 2000);
+}
+
+
 
 </script>
 </body>

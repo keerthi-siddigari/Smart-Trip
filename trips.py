@@ -4,9 +4,16 @@ from groq import Groq
 from dotenv import load_dotenv
 import MySQLdb.cursors
 import uuid
+import secrets
 load_dotenv()
 trips_routes = Blueprint("trips", __name__)
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
+
+def generate_share_token(length=16):
+    # Generates a URL-safe random token
+    return secrets.token_urlsafe(length)
+
 
 @trips_routes.route("/view-trip/<int:trip_id>")
 def view_trip(trip_id):
@@ -27,10 +34,24 @@ def view_trip(trip_id):
         cursor.close()
         return "Trip not found", 404
 
-    #  Load trip JSON
+    # Load trip JSON
     trip_data = json.loads(trip["ai_data"])
 
-    #  Fetch visited_places for this trip
+    # ----- ADD THIS PART: Ensure share_token exists -----
+    if not trip.get("share_token"):
+        # generate a new token and save it in DB
+        token = generate_share_token(16)
+        cursor.execute(
+            "UPDATE trips SET share_token=%s WHERE id=%s AND user_id=%s",
+            (token, trip_id, session["user_id"])
+        )
+        conn.commit()
+        trip_data["share_token"] = token
+    else:
+        trip_data["share_token"] = trip["share_token"]
+    # ------------------------------------------------------
+
+    # Fetch visited_places for this trip
     cursor.execute("""
         SELECT place_name, visited
         FROM visited_places
@@ -39,15 +60,17 @@ def view_trip(trip_id):
     visited_rows = cursor.fetchall()
     cursor.close()
 
-    #  Create a map of place_name -> visited
+    # Create a map of place_name -> visited
     visited_map = {row["place_name"]: row["visited"] for row in visited_rows}
 
-    #  Merge visited info into daily_plan
+    # Merge visited info into daily_plan
     for day in trip_data.get("daily_plan", []):
         day["visited"] = visited_map.get(day["place"], False)
+
     # After merging visited info
     trip_data["trip_id"] = trip_id
-    #  Render template
+
+    # Render template
     return render_template(
         "trip_result.html",
         trip=trip_data,
@@ -57,7 +80,6 @@ def view_trip(trip_id):
         is_view=True,
         trip_id=trip_id
     )
-
 
 @trips_routes.route("/edit-trip/<int:trip_id>")
 def edit_trip(trip_id):
@@ -540,7 +562,7 @@ JSON format:
         for i in range(duration):
 
             card = original_daily[i % len(original_daily)].copy()
-            # ✅ Clean the place name
+            #  Clean the place name
             card["place"] = card.get("place", "").strip().lstrip("/")
             card["day"] = i + 1
 
@@ -690,13 +712,12 @@ def save_trip():
     cursor = conn.cursor()
 
     try:
-        # ✅ If trip already has UID → check DB
+        # Check if trip already exists
         if trip_data.get("trip_uid"):
             cursor.execute("""
                 SELECT id FROM trips WHERE trip_uid=%s AND user_id=%s
             """, (trip_data["trip_uid"], session["user_id"]))
             existing = cursor.fetchone()
-
             if existing:
                 cursor.close()
                 return {
@@ -705,18 +726,20 @@ def save_trip():
                     "trip_id": existing[0]
                 }
 
-        # ✅ Generate UID for new trip
+        # Generate UID & share token for new trip
         trip_uid = str(uuid.uuid4())
+        share_token = generate_share_token(16)  # <-- generate the share token
 
         ai_json = json.dumps(trip_data)
 
         cursor.execute("""
             INSERT INTO trips 
-            (user_id, trip_uid, destination, start_date, duration, budget, travel_type, ai_data)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            (user_id, trip_uid, share_token, destination, start_date, duration, budget, travel_type, ai_data)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             session["user_id"],
             trip_uid,
+            share_token,               # <-- save token in DB
             trip_data["destination"],
             trip_data["inputs"].get("start_date"),
             trip_data["duration"],
@@ -729,19 +752,18 @@ def save_trip():
         conn.commit()
         cursor.close()
 
-        # ✅ Save UID in session
+        # Save UID and share token in session
         trip_data["trip_uid"] = trip_uid
+        trip_data["share_token"] = share_token   # <-- also save in session
         trip_data["trip_id"] = trip_id
         session["latest_trip"] = trip_data
 
-        return {"success": True, "trip_id": trip_id}
+        return {"success": True, "trip_id": trip_id, "share_token": share_token}
 
     except Exception as e:
         cursor.close()
         print("Error:", e)
         return {"success": False, "error": "DB error"}, 500
-
-
 
 @trips_routes.route("/trip-result")
 def trip_result():
@@ -806,3 +828,39 @@ def toggle_visited():
         cursor.close()
         print("Error toggling visited:", e)
         return jsonify({"success": False, "error": "Database error"}), 500
+    
+
+
+@trips_routes.route("/trip/share/<share_token>")
+def share_trip(share_token):
+    conn = current_app.config["MYSQL_CONNECTION"].connection
+    cursor = conn.cursor(MySQLdb.cursors.DictCursor)
+
+    # Fetch trip by share_token
+    cursor.execute("SELECT * FROM trips WHERE share_token=%s", (share_token,))
+    trip = cursor.fetchone()
+    cursor.close()
+
+    if not trip:
+        return "Shared trip not found or invalid link", 404
+
+    # Convert AI data JSON
+    try:
+        trip_data = json.loads(trip["ai_data"])
+    except Exception as e:
+        print("Error parsing trip ai_data:", e)
+        trip_data = {}
+
+    # Add summary info for template
+    trip_data["trip_id"] = trip["id"]
+    trip_data["destination"] = trip.get("destination", "")
+    trip_data["duration"] = trip.get("duration", 0)
+    trip_data["travel_type"] = trip.get("travel_type", "")
+
+    # Optional: mark as shared view
+    return render_template(
+        "trip_result.html",
+        trip=trip_data,
+        is_view=True,
+        is_shared=True  # your template can use this to hide edit buttons
+    )
